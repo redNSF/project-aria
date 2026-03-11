@@ -1,5 +1,5 @@
 /* ===== Animated Background ===== */
-.login-page {
+.signup-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -13,13 +13,13 @@
       #0a1628,
       #180a30);
   background-size: 400% 400%;
-  animation: gradientFlow 15s ease infinite;
+  animation: signupGradientFlow 15s ease infinite;
   position: relative;
   overflow: hidden;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
 }
 
-@keyframes gradientFlow {
+@keyframes signupGradientFlow {
   0% {
     background-position: 0% 50%;
   }
@@ -41,7 +41,7 @@
   }
 }
 
-.login-page::before {
+.signup-page::before {
   content: '';
   position: absolute;
   top: -50%;
@@ -52,11 +52,11 @@
     radial-gradient(ellipse at 20% 50%, rgba(120, 50, 255, 0.2) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 20%, rgba(255, 50, 120, 0.18) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 80%, rgba(50, 120, 255, 0.15) 0%, transparent 50%);
-  animation: bgShift 10s ease-in-out infinite alternate;
+  animation: signupBgShift 10s ease-in-out infinite alternate;
   z-index: 0;
 }
 
-.login-page::after {
+.signup-page::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -66,11 +66,11 @@
   background:
     radial-gradient(ellipse at 70% 60%, rgba(236, 72, 153, 0.12) 0%, transparent 45%),
     radial-gradient(ellipse at 30% 30%, rgba(56, 189, 248, 0.1) 0%, transparent 45%);
-  animation: bgShift2 13s ease-in-out infinite alternate-reverse;
+  animation: signupBgShift2 13s ease-in-out infinite alternate-reverse;
   z-index: 0;
 }
 
-@keyframes bgShift {
+@keyframes signupBgShift {
   0% {
     transform: translate(0, 0) rotate(0deg) scale(1);
   }
@@ -88,7 +88,7 @@
   }
 }
 
-@keyframes bgShift2 {
+@keyframes signupBgShift2 {
   0% {
     transform: translate(0, 0) rotate(0deg) scale(1);
   }
@@ -103,7 +103,7 @@
 }
 
 /* Floating orbs */
-.login-orb {
+.signup-orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
@@ -111,138 +111,90 @@
   z-index: 0;
 }
 
-.login-orb--1 {
+.signup-orb--1 {
   width: 400px;
   height: 400px;
   background: rgba(138, 43, 226, 0.4);
-  top: 10%;
-  left: 15%;
-  animation: orbFloat1 8s ease-in-out infinite alternate, orbColor1 12s ease-in-out infinite alternate;
+  top: 5%;
+  right: 15%;
+  animation: signupOrb1 8s ease-in-out infinite alternate, signupOrbColor1 12s ease-in-out infinite alternate;
 }
 
-.login-orb--2 {
+.signup-orb--2 {
   width: 350px;
   height: 350px;
   background: rgba(255, 61, 113, 0.35);
-  bottom: 15%;
-  right: 10%;
-  animation: orbFloat2 10s ease-in-out infinite alternate, orbColor2 14s ease-in-out infinite alternate;
+  bottom: 10%;
+  left: 10%;
+  animation: signupOrb2 10s ease-in-out infinite alternate, signupOrbColor2 14s ease-in-out infinite alternate;
 }
 
-.login-orb--3 {
+.signup-orb--3 {
   width: 280px;
   height: 280px;
   background: rgba(0, 150, 255, 0.3);
-  top: 60%;
-  left: 50%;
-  animation: orbFloat3 9s ease-in-out infinite alternate, orbColor3 11s ease-in-out infinite alternate;
+  top: 50%;
+  left: 60%;
+  animation: signupOrb3 9s ease-in-out infinite alternate, signupOrbColor3 11s ease-in-out infinite alternate;
 }
 
-@keyframes orbFloat1 {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate(60px, -40px) scale(1.15);
-  }
-
-  100% {
-    transform: translate(-20px, 30px) scale(1.05);
-  }
+@keyframes signupOrb1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, 30px) scale(1.15); }
+  100% { transform: translate(30px, -20px) scale(1.05); }
 }
 
-@keyframes orbFloat2 {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate(-50px, 30px) scale(1.2);
-  }
-
-  100% {
-    transform: translate(30px, -20px) scale(0.95);
-  }
+@keyframes signupOrb2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.2); }
+  100% { transform: translate(-20px, 40px) scale(0.95); }
 }
 
-@keyframes orbFloat3 {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate(30px, -50px) scale(0.85);
-  }
-
-  100% {
-    transform: translate(-40px, 20px) scale(1.1);
-  }
+@keyframes signupOrb3 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -40px) scale(0.85); }
+  100% { transform: translate(40px, 20px) scale(1.1); }
 }
 
-@keyframes orbColor1 {
-  0% {
-    background: rgba(138, 43, 226, 0.4);
-  }
-
-  50% {
-    background: rgba(99, 102, 241, 0.45);
-  }
-
-  100% {
-    background: rgba(168, 85, 247, 0.4);
-  }
+@keyframes signupOrbColor1 {
+  0% { background: rgba(138, 43, 226, 0.4); }
+  50% { background: rgba(99, 102, 241, 0.45); }
+  100% { background: rgba(168, 85, 247, 0.4); }
 }
 
-@keyframes orbColor2 {
-  0% {
-    background: rgba(255, 61, 113, 0.35);
-  }
-
-  50% {
-    background: rgba(236, 72, 153, 0.4);
-  }
-
-  100% {
-    background: rgba(244, 63, 94, 0.35);
-  }
+@keyframes signupOrbColor2 {
+  0% { background: rgba(255, 61, 113, 0.35); }
+  50% { background: rgba(236, 72, 153, 0.4); }
+  100% { background: rgba(244, 63, 94, 0.35); }
 }
 
-@keyframes orbColor3 {
-  0% {
-    background: rgba(0, 150, 255, 0.3);
-  }
-
-  50% {
-    background: rgba(56, 189, 248, 0.35);
-  }
-
-  100% {
-    background: rgba(14, 165, 233, 0.3);
-  }
+@keyframes signupOrbColor3 {
+  0% { background: rgba(0, 150, 255, 0.3); }
+  50% { background: rgba(56, 189, 248, 0.35); }
+  100% { background: rgba(14, 165, 233, 0.3); }
 }
 
 /* ===== Glassmorphism Card ===== */
-.login-card {
+.signup-card {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 440px;
+  max-width: 520px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
-  padding: 3rem 2.5rem;
+  padding: 2.5rem 2.5rem;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  animation: cardEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: signupCardEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
   transform: translateY(20px);
 }
 
-@keyframes cardEnter {
+@keyframes signupCardEnter {
   to {
     opacity: 1;
     transform: translateY(0);
@@ -250,25 +202,25 @@
 }
 
 /* ===== Brand ===== */
-.login-brand {
+.signup-brand {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
-.login-brand__icon {
+.signup-brand__icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #7c3aed, #f43f5e);
+  background: linear-gradient(135deg, #06b6d4, #7c3aed);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 1rem;
   font-size: 1.5rem;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.35);
 }
 
-.login-brand__icon svg {
+.signup-brand__icon svg {
   width: 28px;
   height: 28px;
   fill: none;
@@ -278,7 +230,7 @@
   stroke-linejoin: round;
 }
 
-.login-brand__title {
+.signup-brand__title {
   font-family: 'Inter', sans-serif;
   font-size: 1.75rem;
   font-weight: 700;
@@ -287,7 +239,7 @@
   margin: 0;
 }
 
-.login-brand__subtitle {
+.signup-brand__subtitle {
   color: rgba(255, 255, 255, 0.45);
   font-size: 0.9rem;
   margin-top: 0.35rem;
@@ -295,19 +247,30 @@
 }
 
 /* ===== Form ===== */
-.login-form {
+.signup-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.1rem;
 }
 
-.login-field {
+/* Side-by-side row for name + username */
+.signup-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.signup-row .signup-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.signup-field {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.login-field__label {
+.signup-field__label {
   font-size: 0.8rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.55);
@@ -315,13 +278,13 @@
   letter-spacing: 0.06em;
 }
 
-.login-field__input-wrapper {
+.signup-field__input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.login-field__icon {
+.signup-field__icon {
   position: absolute;
   left: 14px;
   width: 18px;
@@ -331,7 +294,7 @@
   transition: color 0.3s ease;
 }
 
-.login-field__input {
+.signup-field__input {
   width: 100%;
   padding: 0.85rem 1rem 0.85rem 2.75rem;
   background: rgba(255, 255, 255, 0.05);
@@ -345,26 +308,21 @@
   box-sizing: border-box;
 }
 
-.login-field__input::placeholder {
+.signup-field__input::placeholder {
   color: rgba(255, 255, 255, 0.25);
 }
 
-.login-field__input:focus {
-  border-color: rgba(124, 58, 237, 0.6);
+.signup-field__input:focus {
+  border-color: rgba(6, 182, 212, 0.6);
   background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.12);
 }
 
-.login-field__input:focus~.login-field__icon,
-.login-field__input:focus+.login-field__icon {
-  color: rgba(124, 58, 237, 0.8);
+.signup-field__input-wrapper:focus-within .signup-field__icon {
+  color: rgba(6, 182, 212, 0.8);
 }
 
-.login-field__input-wrapper:focus-within .login-field__icon {
-  color: rgba(124, 58, 237, 0.8);
-}
-
-.login-field__toggle-password {
+.signup-field__toggle-password {
   position: absolute;
   right: 12px;
   background: none;
@@ -378,56 +336,52 @@
   transition: color 0.3s ease;
 }
 
-.login-field__toggle-password:hover {
+.signup-field__toggle-password:hover {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* ===== Options Row ===== */
-.login-options {
+/* ===== Terms ===== */
+.signup-terms {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: -0.25rem;
-}
-
-.login-remember {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   cursor: pointer;
+  margin-top: 0.25rem;
 }
 
-.login-remember__checkbox {
+.signup-terms__checkbox {
   width: 16px;
   height: 16px;
-  accent-color: #7c3aed;
+  accent-color: #06b6d4;
   cursor: pointer;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
-.login-remember__text {
+.signup-terms__text {
   font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
 }
 
-.login-forgot {
-  font-size: 0.82rem;
-  color: #a78bfa;
+.signup-terms__link {
+  color: #67e8f9;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s ease;
 }
 
-.login-forgot:hover {
-  color: #c4b5fd;
+.signup-terms__link:hover {
+  color: #a5f3fc;
 }
 
 /* ===== Submit Button ===== */
-.login-submit {
+.signup-submit {
   width: 100%;
   padding: 0.9rem;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  background: linear-gradient(135deg, #06b6d4, #7c3aed);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
@@ -436,33 +390,33 @@
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
-  margin-top: 0.5rem;
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.3);
+  margin-top: 0.25rem;
 }
 
-.login-submit::before {
+.signup-submit::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #a855f7, #ec4899);
+  background: linear-gradient(135deg, #0891b2, #a855f7);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.login-submit:hover {
+.signup-submit:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.45);
+  box-shadow: 0 6px 24px rgba(6, 182, 212, 0.45);
 }
 
-.login-submit:hover::before {
+.signup-submit:hover::before {
   opacity: 1;
 }
 
-.login-submit:active {
+.signup-submit:active {
   transform: translateY(0);
 }
 
-.login-submit__text {
+.signup-submit__text {
   position: relative;
   z-index: 1;
   display: flex;
@@ -471,29 +425,29 @@
   gap: 0.5rem;
 }
 
-.login-submit__arrow {
+.signup-submit__arrow {
   transition: transform 0.3s ease;
 }
 
-.login-submit:hover .login-submit__arrow {
+.signup-submit:hover .signup-submit__arrow {
   transform: translateX(3px);
 }
 
 /* ===== Divider ===== */
-.login-divider {
+.signup-divider {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin: 0.75rem 0;
 }
 
-.login-divider__line {
+.signup-divider__line {
   flex: 1;
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
 }
 
-.login-divider__text {
+.signup-divider__text {
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.3);
   text-transform: uppercase;
@@ -502,12 +456,12 @@
 }
 
 /* ===== Social Buttons ===== */
-.login-socials {
+.signup-socials {
   display: flex;
   gap: 0.75rem;
 }
 
-.login-social-btn {
+.signup-social-btn {
   flex: 1;
   display: flex;
   align-items: center;
@@ -525,56 +479,61 @@
   transition: all 0.3s ease;
 }
 
-.login-social-btn:hover {
+.signup-social-btn:hover {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
 
-.login-social-btn svg {
+.signup-social-btn svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
 }
 
-/* ===== Signup Link ===== */
-.login-signup {
+/* ===== Login Link ===== */
+.signup-login {
   text-align: center;
-  margin-top: 1.75rem;
+  margin-top: 1.5rem;
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.4);
 }
 
-.login-signup__link {
-  color: #a78bfa;
+.signup-login__link {
+  color: #67e8f9;
   text-decoration: none;
   font-weight: 600;
   margin-left: 0.25rem;
   transition: color 0.2s ease;
 }
 
-.login-signup__link:hover {
-  color: #c4b5fd;
+.signup-login__link:hover {
+  color: #a5f3fc;
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 480px) {
-  .login-card {
+@media (max-width: 560px) {
+  .signup-card {
     padding: 2rem 1.5rem;
     border-radius: 20px;
   }
 
-  .login-brand__title {
+  .signup-brand__title {
     font-size: 1.5rem;
   }
 
-  .login-socials {
+  .signup-row {
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .signup-socials {
     flex-direction: column;
   }
 
-  .login-orb--1,
-  .login-orb--2,
-  .login-orb--3 {
+  .signup-orb--1,
+  .signup-orb--2,
+  .signup-orb--3 {
     opacity: 0.25;
   }
 }
