@@ -158,8 +158,8 @@
   animation: authCardEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
   transform: translateY(20px);
-  /* Smooth size transitions */
-  transition: max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Smooth size transitions between login & signup */
+  transition: max-width 0.55s cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .auth-card--login {
@@ -179,17 +179,31 @@
 
 /* ===== Card Inner Transition ===== */
 .auth-card__inner {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.4s cubic-bezier(0.33, 1, 0.68, 1),
+    filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform, filter;
 }
 
 .auth-card__inner--enter {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+  filter: blur(0);
 }
 
 .auth-card__inner--exit {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(-8px) scale(0.98);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.auth-card__inner--pre-enter {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  filter: blur(4px);
+  transition: none;
   pointer-events: none;
 }
 

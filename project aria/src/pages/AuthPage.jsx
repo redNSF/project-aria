@@ -6,7 +6,7 @@ function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mode, setMode] = useState(location.pathname === '/signup' ? 'signup' : 'login');
-  const [transitioning, setTransitioning] = useState(false);
+  const [phase, setPhase] = useState('idle'); // 'idle' | 'exit' | 'pre-enter' | 'enter'
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -26,23 +26,33 @@ function AuthPage() {
   // Sync URL changes (browser back/forward)
   useEffect(() => {
     const newMode = location.pathname === '/signup' ? 'signup' : 'login';
-    if (newMode !== mode) {
+    if (newMode !== mode && phase === 'idle') {
       switchMode(newMode);
     }
   }, [location.pathname]);
 
   const switchMode = (newMode) => {
-    if (transitioning || newMode === mode) return;
-    setTransitioning(true);
-    // After exit animation, swap content
+    if (phase !== 'idle' || newMode === mode) return;
+
+    // Phase 1: exit current content
+    setPhase('exit');
+
     setTimeout(() => {
+      // Phase 2: swap content but position it for enter animation
       setMode(newMode);
       navigate(newMode === 'signup' ? '/signup' : '/login', { replace: true });
-      // Allow enter animation to start
+      setPhase('pre-enter');
+
+      // Phase 3: trigger enter animation on next frame
       requestAnimationFrame(() => {
-        setTransitioning(false);
+        requestAnimationFrame(() => {
+          setPhase('enter');
+
+          // Phase 4: return to idle after enter completes
+          setTimeout(() => setPhase('idle'), 420);
+        });
       });
-    }, 300);
+    }, 400);
   };
 
   const handleLoginSubmit = (e) => {
@@ -93,7 +103,11 @@ function AuthPage() {
       <div className="auth-orb auth-orb--3" />
 
       <div className={`auth-card ${mode === 'signup' ? 'auth-card--signup' : 'auth-card--login'}`}>
-        <div className={`auth-card__inner ${transitioning ? 'auth-card__inner--exit' : 'auth-card__inner--enter'}`}>
+        <div className={`auth-card__inner ${
+          phase === 'exit' ? 'auth-card__inner--exit' :
+          phase === 'pre-enter' ? 'auth-card__inner--pre-enter' :
+          'auth-card__inner--enter'
+        }`}>
 
           {mode === 'login' ? (
             /* =================== LOGIN FORM =================== */
