@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { signInWithEmail, signUpWithEmail } from '../firebase';
 import './AuthPage.css';
 
 function AuthPage() {
@@ -22,6 +23,10 @@ function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+
+  // Shared UI state
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync URL changes (browser back/forward)
   useEffect(() => {
@@ -55,14 +60,55 @@ function AuthPage() {
     }, 400);
   };
 
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    console.log('Login attempt:', { loginEmail, rememberMe });
+  // Map Firebase error codes to user-friendly messages
+  const friendlyError = (err) => {
+    const map = {
+      'auth/email-already-in-use': 'An account with this email already exists.',
+      'auth/invalid-email': 'Please enter a valid email address.',
+      'auth/weak-password': 'Password should be at least 6 characters.',
+      'auth/user-not-found': 'No account found with this email.',
+      'auth/wrong-password': 'Incorrect password. Please try again.',
+      'auth/invalid-credential': 'Invalid email or password. Please try again.',
+      'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    };
+    return map[err.code] || err.message || 'Something went wrong. Please try again.';
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    console.log('Signup attempt:', { fullName, username, signupEmail, agreeTerms });
+    setError('');
+    setIsSubmitting(true);
+    try {
+      await signInWithEmail(loginEmail, loginPassword);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSignupSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (signupPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await signUpWithEmail(signupEmail, signupPassword);
+      // Extra profile fields (fullName, username) logged for now;
+      // persist to Firestore once you add a database layer.
+      console.log('Profile info (save to Firestore later):', { fullName, username });
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Shared social buttons
@@ -121,6 +167,17 @@ function AuthPage() {
                 <h1 className="auth-brand__title">PolyVerse</h1>
                 <p className="auth-brand__subtitle">Welcome back — sign in to continue</p>
               </div>
+
+              {error && (
+                <div className="auth-error" role="alert">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                  {error}
+                </div>
+              )}
 
               <form className="auth-form" onSubmit={handleLoginSubmit}>
                 <div className="auth-field">
@@ -195,13 +252,20 @@ function AuthPage() {
                   <a href="#" className="auth-forgot">Forgot password?</a>
                 </div>
 
-                <button type="submit" className="auth-submit auth-submit--login" id="login-submit-btn">
+                <button
+                  type="submit"
+                  className={`auth-submit auth-submit--login${isSubmitting ? ' auth-submit--loading' : ''}`}
+                  id="login-submit-btn"
+                  disabled={isSubmitting}
+                >
                   <span className="auth-submit__text">
-                    Sign In
-                    <svg className="auth-submit__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
+                    {isSubmitting ? 'Signing In…' : 'Sign In'}
+                    {!isSubmitting && (
+                      <svg className="auth-submit__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
+                    )}
                   </span>
                 </button>
               </form>
@@ -230,6 +294,17 @@ function AuthPage() {
                 <h1 className="auth-brand__title">Join PolyVerse</h1>
                 <p className="auth-brand__subtitle">Create your account and start connecting</p>
               </div>
+
+              {error && (
+                <div className="auth-error" role="alert">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                  {error}
+                </div>
+              )}
 
               <form className="auth-form" onSubmit={handleSignupSubmit}>
                 <div className="auth-row">
@@ -364,13 +439,20 @@ function AuthPage() {
                   </span>
                 </label>
 
-                <button type="submit" className="auth-submit auth-submit--signup" id="signup-submit-btn">
+                <button
+                  type="submit"
+                  className={`auth-submit auth-submit--signup${isSubmitting ? ' auth-submit--loading' : ''}`}
+                  id="signup-submit-btn"
+                  disabled={isSubmitting}
+                >
                   <span className="auth-submit__text">
-                    Create Account
-                    <svg className="auth-submit__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
+                    {isSubmitting ? 'Creating Account…' : 'Create Account'}
+                    {!isSubmitting && (
+                      <svg className="auth-submit__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
+                    )}
                   </span>
                 </button>
               </form>

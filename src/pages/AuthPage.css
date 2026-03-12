@@ -629,3 +629,49 @@
     opacity: 0.25;
   }
 }
+
+/* ===== Error Banner ===== */
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 12px;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #fda4af;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: authShake 0.4s ease;
+}
+
+.auth-error svg {
+  flex-shrink: 0;
+  color: #fb7185;
+}
+
+@keyframes authShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ===== Submit Loading State ===== */
+.auth-submit--loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+  animation: authPulse 1.5s ease-in-out infinite;
+}
+
+.auth-submit--loading:hover {
+  transform: none;
+}
+
+@keyframes authPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.5; }
+}
