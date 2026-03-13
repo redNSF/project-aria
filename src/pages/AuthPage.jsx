@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { signInWithEmail, signUpWithEmail } from '../firebase';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '../firebase';
 import './AuthPage.css';
 
 function AuthPage() {
@@ -111,6 +111,19 @@ function AuthPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setIsSubmitting(true);
+    try {
+      await signInWithGoogle();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Shared social buttons
   const socialButtons = (prefix) => (
     <>
@@ -122,7 +135,13 @@ function AuthPage() {
         <div className="auth-divider__line" />
       </div>
       <div className="auth-socials">
-        <button type="button" className="auth-social-btn" id={`${prefix}-google-btn`}>
+        <button 
+          type="button" 
+          className="auth-social-btn" 
+          id={`${prefix}-google-btn`}
+          onClick={handleGoogleSignIn}
+          disabled={isSubmitting}
+        >
           <svg viewBox="0 0 24 24">
             <path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 5.04c1.69 0 3.22.59 4.42 1.56l3.31-3.31A11.97 11.97 0 0 0 12 0 12 12 0 0 0 1.24 6.65l4.03 3.11z"/>
             <path fill="#34A853" d="M16.04 18.01A7.4 7.4 0 0 1 12 19.08a7.08 7.08 0 0 1-6.73-4.84l-4.03 3.11A12 12 0 0 0 12 24c3.05 0 5.8-1.14 7.9-3l-3.86-2.99z"/>
@@ -142,7 +161,7 @@ function AuthPage() {
   );
 
   return (
-    <div className="auth-page">
+    <div className={`auth-page auth-page--${mode}`}>
       {/* Animated background orbs */}
       <div className="auth-orb auth-orb--1" />
       <div className="auth-orb auth-orb--2" />
