@@ -1,0 +1,118 @@
+import { useState } from 'react';
+import { NavLink, useOutlet, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { logOut } from '../firebase';
+import '../pages/Dashboard.css';
+
+export default function DashboardLayout() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const outlet = useOutlet();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSignOut = async () => {
+    await logOut();
+    navigate('/login');
+  };
+
+  return (
+    <div className="dashboard-page">
+      {/* Background Orbs */}
+      <div className="dash-orb dash-orb--1" />
+      <div className="dash-orb dash-orb--2" />
+      <div className="dash-orb dash-orb--3" />
+
+      {/* Main Layout */}
+      <div className="dash-layout">
+        
+        {/* --- Sidebar --- */}
+        <aside className="dash-sidebar">
+          <div className="dash-brand">
+            <div className="dash-brand__icon">
+              <svg viewBox="0 0 24 24">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </div>
+            <h1 className="dash-brand__title">PolyVerse</h1>
+          </div>
+
+          <nav className="dash-nav">
+            <NavLink 
+              to="/dashboard"
+              className={({ isActive }) => `dash-nav__item ${isActive ? 'dash-nav__item--active' : ''}`}
+              end
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Home Feed
+            </NavLink>
+            <button className="dash-nav__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              My Library
+            </button>
+            <button className="dash-nav__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              Saved Materials
+            </button>
+            <NavLink 
+              to={`/user/${user?.displayName || 'student'}`}
+              className={({ isActive }) => `dash-nav__item ${isActive ? 'dash-nav__item--active' : ''}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Profile
+            </NavLink>
+          </nav>
+
+          <div className="dash-user">
+            <div className="dash-user__info">
+              <span className="dash-user__name">{user?.displayName || 'Student'}</span>
+              <span className="dash-user__email">{user?.email}</span>
+            </div>
+            <button onClick={handleSignOut} className="dash-signout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+          </div>
+        </aside>
+
+        {/* --- Main Content Area --- */}
+        <main className="dash-main">
+          {/* Global Header */}
+          <header className="dash-header">
+            <div className="dash-search">
+              <svg className="dash-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input 
+                type="text" 
+                className="dash-search__input" 
+                placeholder="Search study materials, notes, subjects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button className="dash-btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Upload
+            </button>
+          </header>
+
+          {/* Page-specific routing content */}
+          <div style={{ flex: 1, position: 'relative' }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                style={{ width: '100%', height: '100%' }}
+              >
+                {outlet}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+        </main>
+      </div>
+    </div>
+  );
+}
