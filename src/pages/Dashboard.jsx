@@ -90,45 +90,135 @@ function Dashboard() {
             </button>
           </header>
 
-          {/* Feed Content */}
-          <div className="dash-content">
-            <div className="dash-content__header">
-              <h2>Recent Uploads</h2>
-              <div className="dash-filters">
-                <button className="dash-filter-btn active">All</button>
-                <button className="dash-filter-btn">Computer Science</button>
-                <button className="dash-filter-btn">Mathematics</button>
-                <button className="dash-filter-btn">Biology</button>
+          {activeTab === 'profile' ? (
+            <ProfileView user={user} materials={DUMMY_MATERIALS.slice(0, 3)} />
+          ) : (
+            /* Feed Content */
+            <div className="dash-content">
+              <div className="dash-content__header">
+                <h2>{activeTab === 'home' ? 'Recent Uploads' : activeTab === 'saved' ? 'Saved Materials' : 'My Library'}</h2>
+                <div className="dash-filters">
+                  <button className="dash-filter-btn active">All</button>
+                  <button className="dash-filter-btn">Computer Science</button>
+                  <button className="dash-filter-btn">Mathematics</button>
+                  <button className="dash-filter-btn">Biology</button>
+                </div>
+              </div>
+
+              <div className="dash-grid">
+                {DUMMY_MATERIALS.map(mat => (
+                  <div key={mat.id} className="dash-card">
+                    <div className="dash-card__header">
+                      <span className="dash-card__type" data-type={mat.type}>{mat.type}</span>
+                      <button className="dash-card__save">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                      </button>
+                    </div>
+                    <h3 className="dash-card__title">{mat.title}</h3>
+                    <div className="dash-card__meta">
+                      <div className="dash-card__author">
+                        <div className="dash-avatar">{mat.author.charAt(0)}</div>
+                        <span>{mat.author}</span>
+                      </div>
+                      <span className="dash-card__date">{mat.date}</span>
+                    </div>
+                    <div className="dash-card__footer">
+                      <span className="dash-tag">{mat.subject}</span>
+                      <button className="dash-btn-outline">View</button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div className="dash-grid">
-              {DUMMY_MATERIALS.map(mat => (
-                <div key={mat.id} className="dash-card">
-                  <div className="dash-card__header">
-                    <span className="dash-card__type" data-type={mat.type}>{mat.type}</span>
-                    <button className="dash-card__save">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-                    </button>
-                  </div>
-                  <h3 className="dash-card__title">{mat.title}</h3>
-                  <div className="dash-card__meta">
-                    <div className="dash-card__author">
-                      <div className="dash-avatar">{mat.author.charAt(0)}</div>
-                      <span>{mat.author}</span>
-                    </div>
-                    <span className="dash-card__date">{mat.date}</span>
-                  </div>
-                  <div className="dash-card__footer">
-                    <span className="dash-tag">{mat.subject}</span>
-                    <button className="dash-btn-outline">View</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </main>
 
+      </div>
+    </div>
+  );
+}
+
+// Sub-component for Profile
+function ProfileView({ user, materials }) {
+  const [profileTab, setProfileTab] = useState('uploads');
+
+  return (
+    <div className="dash-content profile-view">
+      {/* Profile Header Hero */}
+      <div className="profile-hero">
+        <div className="profile-hero__avatar">
+          {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'S'}
+        </div>
+        <div className="profile-hero__info">
+          <h2>{user?.displayName || 'Student User'}</h2>
+          <p className="profile-hero__email">{user?.email}</p>
+          <span className="profile-badge">PolyVerse Member</span>
+        </div>
+        <div className="profile-hero__actions">
+          <button className="dash-btn-outline">Edit Profile</button>
+          <button className="dash-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            Share
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className="profile-stats">
+        <div className="profile-stat-box">
+          <h3>24</h3>
+          <p>Materials Uploaded</p>
+        </div>
+        <div className="profile-stat-box">
+          <h3>142</h3>
+          <p>Total Saves</p>
+        </div>
+        <div className="profile-stat-box">
+          <h3>89</h3>
+          <p>Followers</p>
+        </div>
+        <div className="profile-stat-box">
+          <h3>12</h3>
+          <p>Following</p>
+        </div>
+      </div>
+
+      {/* Profile Tabs */}
+      <div className="profile-tabs">
+        <button 
+          className={`profile-tab ${profileTab === 'uploads' ? 'active' : ''}`}
+          onClick={() => setProfileTab('uploads')}
+        >
+          My Uploads
+        </button>
+        <button 
+          className={`profile-tab ${profileTab === 'interactions' ? 'active' : ''}`}
+          onClick={() => setProfileTab('interactions')}
+        >
+          Recent Activity
+        </button>
+      </div>
+
+      {/* User Content Grid (Reusing dash-grid format) */}
+      <div className="dash-grid">
+        {materials.map(mat => (
+          <div key={mat.id} className="dash-card">
+            <div className="dash-card__header">
+              <span className="dash-card__type" data-type={mat.type}>{mat.type}</span>
+              <button className="dash-card__save">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </button>
+            </div>
+            <h3 className="dash-card__title">{mat.title}</h3>
+            <div className="dash-card__meta">
+              <span className="dash-card__date">{mat.date}</span>
+            </div>
+            <div className="dash-card__footer">
+              <span className="dash-tag">{mat.subject}</span>
+              <button className="dash-btn-outline">Edit</button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
