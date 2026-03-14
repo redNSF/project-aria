@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '../firebase';
 import './AuthPage.css';
@@ -8,6 +8,9 @@ function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState(location.pathname === '/signup' ? 'signup' : 'login');
   const [phase, setPhase] = useState('idle'); // 'idle' | 'exit' | 'pre-enter' | 'enter'
+  const [cardHeight, setCardHeight] = useState('auto');
+  const cardRef = useRef(null);
+  const innerRef = useRef(null);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -39,6 +42,11 @@ function AuthPage() {
   const switchMode = (newMode) => {
     if (phase !== 'idle' || newMode === mode) return;
 
+    // Lock current height before exit
+    if (cardRef.current) {
+      setCardHeight(cardRef.current.offsetHeight);
+    }
+
     // Phase 1: exit current content
     setPhase('exit');
 
@@ -48,16 +56,35 @@ function AuthPage() {
       navigate(newMode === 'signup' ? '/signup' : '/login', { replace: true });
       setPhase('pre-enter');
 
-      // Phase 3: trigger enter animation on next frame
+      // Phase 3: trigger height transition & enter animation
       requestAnimationFrame(() => {
+        if (cardRef.current && innerRef.current) {
+          // Temporarily unset fixed height to measure natural height
+          const currentHeight = cardRef.current.style.height;
+          cardRef.current.style.height = 'auto';
+          const nextHeight = cardRef.current.offsetHeight;
+          
+          // Restore old fixed height
+          cardRef.current.style.height = currentHeight;
+          
+          // Force reflow
+          void cardRef.current.offsetHeight;
+          
+          // Apply new target height for transition
+          setCardHeight(nextHeight);
+        }
+
         requestAnimationFrame(() => {
           setPhase('enter');
 
           // Phase 4: return to idle after enter completes
-          setTimeout(() => setPhase('idle'), 420);
+          setTimeout(() => {
+            setPhase('idle');
+            setCardHeight('auto');
+          }, 350);
         });
       });
-    }, 400);
+    }, 250);
   };
 
   // Map Firebase error codes to user-friendly messages
@@ -167,8 +194,12 @@ function AuthPage() {
       <div className="auth-orb auth-orb--2" />
       <div className="auth-orb auth-orb--3" />
 
-      <div className={`auth-card ${mode === 'signup' ? 'auth-card--signup' : 'auth-card--login'}`}>
-        <div className={`auth-card__inner ${
+      <div 
+        ref={cardRef}
+        className={`auth-card ${mode === 'signup' ? 'auth-card--signup' : 'auth-card--login'}`}
+        style={{ height: cardHeight === 'auto' ? 'auto' : `${cardHeight}px` }}
+      >
+        <div ref={innerRef} className={`auth-card__inner ${
           phase === 'exit' ? 'auth-card__inner--exit' :
           phase === 'pre-enter' ? 'auth-card__inner--pre-enter' :
           'auth-card__inner--enter'
