@@ -6,7 +6,7 @@ import { logOut } from '../firebase';
 import '../pages/Dashboard.css';
 
 export default function DashboardLayout() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const outlet = useOutlet();
@@ -15,6 +15,22 @@ export default function DashboardLayout() {
   const handleSignOut = async () => {
     await logOut();
     navigate('/login');
+  };
+
+  const isMentionMode = searchQuery.startsWith('@');
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (isMentionMode) {
+        // @username navigation — strip the @ and go to that profile
+        const targetUser = searchQuery.slice(1).trim();
+        if (targetUser) {
+          navigate(`/user/${targetUser}`);
+          setSearchQuery('');
+        }
+      }
+      // Future: handle regular search queries here
+    }
   };
 
   return (
@@ -56,7 +72,7 @@ export default function DashboardLayout() {
               Saved Materials
             </button>
             <NavLink 
-              to={`/user/${user?.displayName || 'student'}`}
+              to={`/user/${userData?.username || user?.displayName || 'student'}`}
               className={({ isActive }) => `dash-nav__item ${isActive ? 'dash-nav__item--active' : ''}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -79,14 +95,24 @@ export default function DashboardLayout() {
         <main className="dash-main">
           {/* Global Header */}
           <header className="dash-header">
-            <div className="dash-search">
-              <svg className="dash-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <div className="dash-search" style={{ position: 'relative' }}>
+              {isMentionMode ? (
+                <span style={{
+                  position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--accent-primary, #a78bfa)', fontWeight: 700, fontSize: '1rem',
+                  pointerEvents: 'none', userSelect: 'none'
+                }}>@</span>
+              ) : (
+                <svg className="dash-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              )}
               <input 
                 type="text" 
                 className="dash-search__input" 
-                placeholder="Search study materials, notes, subjects..."
+                placeholder={isMentionMode ? 'Type a username and press Enter...' : 'Search or type @username to visit a profile'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                style={isMentionMode ? { paddingLeft: '2rem', color: 'var(--accent-primary, #a78bfa)' } : {}}
               />
             </div>
             <button className="dash-btn-primary">

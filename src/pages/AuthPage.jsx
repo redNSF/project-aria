@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '../firebase';
+import { signInWithEmail, signUpWithEmail, signInWithGoogle, db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import './AuthPage.css';
 
 function AuthPage() {
@@ -126,10 +127,18 @@ function AuthPage() {
 
     setIsSubmitting(true);
     try {
-      await signUpWithEmail(signupEmail, signupPassword);
-      // Extra profile fields (fullName, username) logged for now;
-      // persist to Firestore once you add a database layer.
-      console.log('Profile info (save to Firestore later):', { fullName, username });
+      const userCredential = await signUpWithEmail(signupEmail, signupPassword);
+      const user = userCredential.user;
+      
+      // Save user profile information in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        username: username,
+        fullName: fullName,
+        email: signupEmail,
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+
       navigate('/', { replace: true });
     } catch (err) {
       setError(friendlyError(err));

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import EditProfileModal from '../components/EditProfileModal';
@@ -32,57 +32,120 @@ const itemVariants = {
 
 export default function ProfilePage() {
   const { username } = useParams();
-  const { user } = useAuth();
+  const { user, userData } = useAuth(); // userData contains our username/fullName from Firestore
   const [profileTab, setProfileTab] = useState('uploads');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [schoolName, setSchoolName] = useState('');
-  
-  // Track specific profile data locally to avoid needing to refresh the whole page
-  const [localProfileData, setLocalProfileData] = useState({
-    displayName: user?.displayName || '',
-    photoURL: user?.photoURL || ''
-  });
+  const [profileData, setProfileData] = useState(null); // The data of the profile being viewed
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [userNotFound, setUserNotFound] = useState(false);
 
-  // Verify if we are looking at our own profile or someone else's
-  const isOwnProfile = !username || username === user?.displayName || (!user?.displayName && username === 'student');
+  // If no username param is provided, default to the logged in user's username
+  const targetUsername = username || userData?.username || (isOwnProfile ? '' : user?.displayName) || 'student';
   
+  // They are viewing their own profile if:
+  // 1. There's no username in the URL at all (direct /profile visit)
+  // 2. The URL username matches their Firestore username (new flow)
+  // 3. The URL username matches their Firebase displayName (old flow, before username was stored)
+  const isOwnProfile = !username ||
+    (userData?.username && userData.username === username) ||
+    (user?.displayName && user.displayName === username);
+
   // Uses local state primarily (for instant updates), falls back to user context
-  const displayUsername = isOwnProfile ? (localProfileData.displayName || user?.displayName || 'Student User') : username;
-  const displayEmail = isOwnProfile ? user?.email : 'Hidden';
-  const displayPhoto = isOwnProfile ? (localProfileData.photoURL || user?.photoURL) : null;
+  const displayUsername = profileData?.username || (isOwnProfile ? userData?.username : null) || (username && !userNotFound ? username : 'student');
+  const displayName = profileData?.displayName || profileData?.fullName || (isOwnProfile ? user?.displayName : null) || (username && !userNotFound ? username : 'Student');
+  const displayEmail = (isOwnProfile || profileData?.publicEmail) ? (profileData?.email || user?.email || 'No Email') : 'Hidden';
+  const displayPhoto = profileData?.photoURL || (isOwnProfile ? user?.photoURL : null);
+  const schoolName = profileData?.schoolName || '';
 
-  // Fetch School Name on Load
+  // Fetch the target user's profile data
   useEffect(() => {
-    if (isOwnProfile && user) {
-      const fetchUserData = async () => {
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          
-          if (userDocSnap.exists()) {
-            setSchoolName(userDocSnap.data().schoolName || '');
-          }
-        } catch (err) {
-          console.error("Error fetching user stats:", err);
+    const fetchProfile = async () => {
+      setLoadingProfile(true);
+      setUserNotFound(false);
+      try {
+        if (isOwnProfile) {
+          // Fast-path: we are the user — always use auth data directly
+          setProfileData({
+            ...(userData || {}),
+            displayName: user?.displayName,
+            photoURL: user?.photoURL
+          });
+          setLoadingProfile(false);
+          return;
         }
-      };
-      fetchUserData();
-      
-      // Keep local state in sync with user context on initial load
-      setLocalProfileData({
-        displayName: user.displayName || '',
-        photoURL: user.photoURL || ''
-      });
+
+        // Query Firestore for the user with this username
+        try {
+          const q = query(collection(db, 'users'), where('username', '==', targetUsername));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            const data = querySnapshot.docs[0].data();
+            setProfileData({
+              username: data.username || targetUsername,
+              displayName: data.displayName || data.fullName || targetUsername,
+              photoURL: data.photoURL || null,
+              schoolName: data.schoolName || '',
+              email: data.email || ''
+            });
+          } else {
+            // Username not found in Firestore
+            setUserNotFound(true);
+          }
+        } catch (queryErr) {
+          console.error('Error querying user by username:', queryErr);
+          setProfileData({ username: targetUsername, displayName: targetUsername, photoURL: null, schoolName: '' });
+        }
+
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+    if (user !== undefined) {
+      fetchProfile();
     }
-  }, [isOwnProfile, user]);
+  }, [targetUsername, isOwnProfile, user, userData]);
 
   const handleProfileUpdate = (newData) => {
-    setLocalProfileData({
-      displayName: newData.displayName,
-      photoURL: newData.photoURL
-    });
-    setSchoolName(newData.schoolName);
+    // If we're on our own profile, update local UI optimistically
+    if (isOwnProfile) {
+      setProfileData(prev => ({
+        ...prev,
+        displayName: newData.displayName,
+        photoURL: newData.photoURL,
+        schoolName: newData.schoolName,
+        username: newData.username
+      }));
+    }
   };
+
+  // ── User Not Found screen ─────────────────────────────────
+  if (!loadingProfile && userNotFound) {
+    return (
+      <motion.div
+        className="dash-content profile-view"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', gap: '1rem' }}
+      >
+        <div style={{
+          width: '80px', height: '80px', borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '2rem'
+        }}>?</div>
+        <h2 style={{ margin: 0, fontSize: '1.5rem' }}>User not found</h2>
+        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+          No account with the username <strong>@{targetUsername}</strong> exists.
+        </p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+          Double-check the spelling and try again.
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <>
@@ -96,14 +159,15 @@ export default function ProfilePage() {
         <motion.div variants={itemVariants} className="profile-hero">
           <div className="profile-hero__avatar">
             {displayPhoto ? (
-               <img src={displayPhoto} alt={displayUsername} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+               <img src={displayPhoto} alt={displayName} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
-               displayUsername.charAt(0).toUpperCase()
+               (displayName || 'U').charAt(0).toUpperCase()
             )}
           </div>
           <div className="profile-hero__info">
-            <h2>{displayUsername}</h2>
-            <p className="profile-hero__email">{displayEmail}</p>
+            <h2>{displayName}</h2>
+            <p className="profile-hero__email" style={{ margin: '0 0 0.2rem 0' }}>@{displayUsername}</p>
+            {displayEmail !== 'Hidden' && <p className="profile-hero__email" style={{ fontSize: '0.85rem' }}>{displayEmail}</p>}
             {schoolName && (
                <p className="profile-hero__school" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: '-2px' }}>
@@ -194,6 +258,7 @@ export default function ProfilePage() {
         isOpen={isEditingProfile} 
         onClose={() => setIsEditingProfile(false)} 
         user={user}
+        userData={userData}
         onProfileUpdate={handleProfileUpdate}
       />
     </>
