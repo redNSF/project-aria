@@ -23,7 +23,7 @@ export default function DashboardLayout() {
     if (e.key === 'Enter') {
       if (isMentionMode) {
         // @username navigation — strip the @ and go to that profile
-        const targetUser = searchQuery.slice(1).trim();
+        const targetUser = searchQuery.slice(1).trim().toLowerCase();
         if (targetUser) {
           navigate(`/user/${targetUser}`);
           setSearchQuery('');
@@ -72,8 +72,8 @@ export default function DashboardLayout() {
               Saved Materials
             </button>
             <NavLink 
-              to={`/user/${userData?.username || user?.displayName || 'student'}`}
-              className={({ isActive }) => `dash-nav__item ${isActive ? 'dash-nav__item--active' : ''}`}
+              to="/profile"
+              className={({ isActive }) => `dash-nav__item ${isActive || location.pathname.startsWith('/profile') ? 'dash-nav__item--active' : ''}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               Profile

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
@@ -38,24 +38,37 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState(null); // The data of the profile being viewed
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [userNotFound, setUserNotFound] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // If no username param is provided, default to the logged in user's username
-  const targetUsername = username || userData?.username || (isOwnProfile ? '' : user?.displayName) || 'student';
-  
-  // They are viewing their own profile if:
-  // 1. There's no username in the URL at all (direct /profile visit)
-  // 2. The URL username matches their Firestore username (new flow)
-  // 3. The URL username matches their Firebase displayName (old flow, before username was stored)
-  const isOwnProfile = !username ||
-    (userData?.username && userData.username === username) ||
-    (user?.displayName && user.displayName === username);
+  // --- Safety: Reset toast after 7s to prevent 'stuck' saving indicator ---
+  useEffect(() => {
+    if (isSaving) {
+      const timer = setTimeout(() => setIsSaving(false), 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSaving]);
+
+  // Early ownership check (case-insensitive handle match) — helps with instant UI
+  const isInitialOwnProfile = !username ||
+    (userData?.username?.toLowerCase() === username?.toLowerCase()) ||
+    (user?.displayName?.toLowerCase() === username?.toLowerCase());
+
+  // Final ownership check (includes UID check once profileData is fetched)
+  const isOwnProfile = isInitialOwnProfile || (user?.uid && profileData?.uid === user.uid);
+
+  // Consistently use the URL username if provided, otherwise fallback to context
+  const targetUsername = username || userData?.username || (isInitialOwnProfile ? (user?.displayName || '') : '') || 'student';
 
   // Uses local state primarily (for instant updates), falls back to user context
-  const displayUsername = profileData?.username || (isOwnProfile ? userData?.username : null) || (username && !userNotFound ? username : 'student');
-  const displayName = profileData?.displayName || profileData?.fullName || (isOwnProfile ? user?.displayName : null) || (username && !userNotFound ? username : 'Student');
+  const displayUsername = profileData?.username || (isOwnProfile ? userData?.username : null) || (username && !userNotFound ? username : (loadingProfile ? 'Loading...' : 'student'));
+  
+  // Extra safety: ensure displayName is always a string before calling charAt
+  let displayName = profileData?.displayName || (isOwnProfile ? (userData?.displayName || user?.displayName) : null) || (username && !userNotFound ? username : (loadingProfile ? 'Loading...' : 'Student'));
+  if (typeof displayName !== 'string') displayName = String(displayName || 'Student');
+
   const displayEmail = (isOwnProfile || profileData?.publicEmail) ? (profileData?.email || user?.email || 'No Email') : 'Hidden';
   const displayPhoto = profileData?.photoURL || (isOwnProfile ? user?.photoURL : null);
-  const schoolName = profileData?.schoolName || '';
+  const schoolName = profileData?.schoolName || userData?.schoolName || '';
 
   // Fetch the target user's profile data
   useEffect(() => {
@@ -67,21 +80,38 @@ export default function ProfilePage() {
           // Fast-path: we are the user — always use auth data directly
           setProfileData({
             ...(userData || {}),
-            displayName: user?.displayName,
-            photoURL: user?.photoURL
+            displayName: user?.displayName || userData?.displayName, // Favor Auth displayName but fallback to Firestore
+            photoURL: user?.photoURL || userData?.photoURL
           });
           setLoadingProfile(false);
           return;
         }
 
-        // Query Firestore for the user with this username
+        // Query Firestore for the user with this username (case-insensitive via lowercase field)
         try {
-          const q = query(collection(db, 'users'), where('username', '==', targetUsername));
-          const querySnapshot = await getDocs(q);
+          // 1. First try the new lowercase handle field
+          let q = query(collection(db, 'users'), where('username_lowercase', '==', targetUsername.toLowerCase()));
+          let querySnapshot = await getDocs(q);
+
+          // 2. Fallback to legacy case-sensitive username handle
+          if (querySnapshot.empty) {
+            q = query(collection(db, 'users'), where('username', '==', targetUsername));
+            querySnapshot = await getDocs(q);
+          }
+
+          // 3. Fallback to searching by displayName (full name) — catches users without handles
+          if (querySnapshot.empty) {
+             q = query(collection(db, 'users'), where('displayName', '==', targetUsername));
+             querySnapshot = await getDocs(q);
+          }
+
           if (!querySnapshot.empty) {
-            const data = querySnapshot.docs[0].data();
+            const docSnap = querySnapshot.docs[0];
+            const data = docSnap.data();
             setProfileData({
-              username: data.username || targetUsername,
+              ...data,
+              uid: docSnap.id, // Critical for ownership check
+              username: data.username || data.displayName || targetUsername,
               displayName: data.displayName || data.fullName || targetUsername,
               photoURL: data.photoURL || null,
               schoolName: data.schoolName || '',
@@ -155,6 +185,32 @@ export default function ProfilePage() {
         initial="hidden"
         animate="show"
       >
+        {/* Saving Indicator Toast */}
+        <AnimatePresence>
+          {isSaving && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              style={{
+                position: 'fixed', top: '2rem', right: '2rem', 
+                background: 'rgba(167, 139, 250, 0.95)', color: '#fff',
+                padding: '0.75rem 1.5rem', borderRadius: '2rem', 
+                zIndex: 2000, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                fontSize: '0.9rem', fontWeight: 600
+              }}
+            >
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '50%',
+                border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff',
+                animation: 'spin 0.6s linear infinite'
+              }} />
+              Saving changes...
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Profile Header Hero */}
         <motion.div variants={itemVariants} className="profile-hero">
           <div className="profile-hero__avatar">
@@ -260,6 +316,7 @@ export default function ProfilePage() {
         user={user}
         userData={userData}
         onProfileUpdate={handleProfileUpdate}
+        setSaving={setIsSaving}
       />
     </>
   );

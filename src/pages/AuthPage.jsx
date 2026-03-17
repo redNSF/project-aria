@@ -20,7 +20,7 @@ function AuthPage() {
   const [rememberMe, setRememberMe] = useState(false);
 
   // Signup state
-  const [fullName, setFullName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -134,7 +134,8 @@ function AuthPage() {
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {
         username: username,
-        fullName: fullName,
+        username_lowercase: username.toLowerCase(),
+        displayName: displayName,
         email: signupEmail,
         createdAt: new Date().toISOString()
       }, { merge: true });
@@ -375,8 +376,8 @@ function AuthPage() {
                         className="auth-field__input"
                         type="text"
                         placeholder="Jane Doe"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
                         required
                         autoComplete="name"
                       />

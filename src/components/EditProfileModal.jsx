@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth, db } from '../firebase';
 import '../pages/Dashboard.css'; // Reusing existing styling for consistency
 
-export default function EditProfileModal({ isOpen, onClose, user, userData, onProfileUpdate }) {
+export default function EditProfileModal({ isOpen, onClose, user, userData, onProfileUpdate, setSaving }) {
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [photoURL, setPhotoURL] = useState('');
@@ -43,9 +43,48 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
     }
   }, [isOpen, user, userData]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // --- Validation: Alphanumeric only (extra safety) ---
+    if (!/^[a-z0-9]+$/i.test(username)) {
+      setError('Username must be alphanumeric.');
+      return;
+    }
+
+    setLoading(true);
+
+    // --- Uniqueness Check: Only check if it changed ---
+    if (username !== userData?.username) {
+      try {
+        // Use Promise.race to ensure the check doesn't hang for more than 2 seconds
+        const checkUsername = async () => {
+          const q = query(collection(db, 'users'), where('username', '==', username));
+          const querySnapshot = await getDocs(q);
+          return querySnapshot;
+        };
+
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 2000)
+        );
+
+        const querySnapshot = await Promise.race([checkUsername(), timeoutPromise]);
+
+        if (!querySnapshot.empty) {
+          setError('This username is already taken. Please choose another.');
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Username uniqueness check timed out or failed:', err);
+        // If it times out or fails (e.g. network issue), we proceed with the save 
+        // to avoid blocking the user indefinitely.
+      }
+    }
+
+    setLoading(false);
+    if (setSaving) setSaving(true);
 
     // ── Optimistic update: close immediately, save in background ──
     if (onProfileUpdate) {
@@ -64,13 +103,16 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
           await setDoc(userDocRef, {
             schoolName,
             username,
+            username_lowercase: username.toLowerCase(),
             displayName,
-            photoURL: photoURL || ''
+            photoURL: photoURL || '',
+            lastUpdated: new Date().toISOString()
           }, { merge: true });
         }
       } catch (err) {
-        // Silent background failure — UI already updated optimistically
         console.warn('Background profile save failed:', err.message);
+      } finally {
+        if (setSaving) setSaving(false);
       }
     };
 
@@ -169,8 +211,9 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
                   type="submit" 
                   className="dash-btn-primary" 
                   style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  disabled={loading}
                 >
-                  Save Changes
+                  {loading ? 'Checking...' : 'Save Changes'}
                 </button>
               </div>
             </form>

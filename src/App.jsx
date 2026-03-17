@@ -54,6 +54,7 @@ function AppRoutes() {
           {/* Dashboard Layout Routes */}
           <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/user/:username" element={<ProfilePage />} />
           </Route>
 
