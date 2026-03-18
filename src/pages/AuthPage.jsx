@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import './AuthPage.css';
 
 function AuthPage() {
@@ -125,11 +126,21 @@ function AuthPage() {
       return;
     }
 
+    // --- Validation: Alphanumeric only ---
+    if (!/^[a-zA-Z0-9]+$/.test(username)) {
+      setError('Username can only contain letters and numbers.');
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const userCredential = await signUpWithEmail(signupEmail, signupPassword);
       const user = userCredential.user;
       
+      // Update Firebase Auth profile (displayName)
+      await updateProfile(user, { displayName: displayName });
+
       // Save user profile information in Firestore
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {

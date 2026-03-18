@@ -13,35 +13,15 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Seed form from available data when modal opens
+  // Seed form whenever the modal opens or userData clarifies
   useEffect(() => {
-    if (isOpen && user) {
-      setDisplayName(user.displayName || '');
-      setPhotoURL(user.photoURL || '');
-      // Seed username from context immediately (no network needed)
+    if (isOpen) {
+      setDisplayName(userData?.displayName || user?.displayName || '');
       setUsername(userData?.username || '');
       setSchoolName(userData?.schoolName || '');
-
-      // Then try Firestore as a fallback (catches fields not yet in context)
-      if (user.uid) {
-        const fetchUserData = async () => {
-          try {
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-              const data = userDocSnap.data();
-              setSchoolName(data.schoolName || userData?.schoolName || '');
-              setUsername(data.username || userData?.username || '');
-            }
-          } catch (err) {
-            // Firestore blocked (e.g. ad blocker) — context values already used above
-            console.warn('Could not fetch user data from Firestore:', err.message);
-          }
-        };
-        fetchUserData();
-      }
+      setPhotoURL(userData?.photoURL || user?.photoURL || '');
     }
-  }, [isOpen, user, userData]);
+  }, [isOpen, userData, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -154,16 +134,25 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
               </div>
 
               <div className="form-group">
-                <label htmlFor="username" style={labelStyle}>Username</label>
-                <input 
-                  id="username"
-                  type="text" 
-                  className="auth-input" 
-                  value={username} 
-                  onChange={(e) => setUsername(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())} 
-                  placeholder="e.g. janedoe123"
-                  style={inputStyle}
-                />
+                <label htmlFor="username" style={labelStyle}>Handle</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ 
+                    position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)',
+                    color: 'var(--text-secondary)', fontWeight: 600 
+                  }}>@</span>
+                  <input 
+                    id="username"
+                    type="text" 
+                    className="auth-input" 
+                    style={{ ...inputStyle, paddingLeft: '2.5rem' }}
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase())} 
+                    placeholder="username" 
+                  />
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  Only letters and numbers allowed.
+                </p>
               </div>
 
               <div className="form-group">

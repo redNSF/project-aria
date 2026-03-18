@@ -32,15 +32,40 @@ const itemVariants = {
 
 export default function ProfilePage() {
   const { username } = useParams();
-  const { user, userData } = useAuth(); // userData contains our username/fullName from Firestore
+  const { user, userData } = useAuth(); 
   const [profileTab, setProfileTab] = useState('uploads');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileData, setProfileData] = useState(null); // The data of the profile being viewed
+  const [profileData, setProfileData] = useState(null); 
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [userNotFound, setUserNotFound] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Safety: Reset toast after 7s to prevent 'stuck' saving indicator ---
+  // --- Ownership Logic ---
+  // If no username in URL, it's definitely our profile. 
+  // If there is a username, check if it matches our handle (case-insensitive).
+  const isOwnProfile = !username || 
+                       (userData?.username?.toLowerCase() === username?.toLowerCase()) ||
+                       (user?.uid && profileData?.uid === user.uid);
+
+  // --- Identity Resolution (Render Logic) ---
+  // Handle: Firestore Profile > Auth UserData > URL Param > Default
+  const displayUsername = profileData?.username || 
+                          (isOwnProfile ? userData?.username : null) || 
+                          username || 
+                          'user';
+
+  // Name: Firestore Profile > Auth UserData Name > Auth Account Name > Default
+  const displayName = profileData?.displayName || 
+                      (isOwnProfile ? (userData?.displayName || user?.displayName) : null) || 
+                      'User';
+
+  const displayEmail = (isOwnProfile || profileData?.publicEmail) ? (profileData?.email || user?.email || 'No Email') : 'Hidden';
+  const displayPhoto = profileData?.photoURL || (isOwnProfile ? user?.photoURL : null);
+  const schoolName = profileData?.schoolName || userData?.schoolName || '';
+
+  // --- Effects ---
+
+  // 1. Toast Cleanup
   useEffect(() => {
     if (isSaving) {
       const timer = setTimeout(() => setIsSaving(false), 7000);
@@ -48,94 +73,71 @@ export default function ProfilePage() {
     }
   }, [isSaving]);
 
-  // Early ownership check (case-insensitive handle match) — helps with instant UI
-  const isInitialOwnProfile = !username ||
-    (userData?.username?.toLowerCase() === username?.toLowerCase()) ||
-    (user?.displayName?.toLowerCase() === username?.toLowerCase());
-
-  // Final ownership check (includes UID check once profileData is fetched)
-  const isOwnProfile = isInitialOwnProfile || (user?.uid && profileData?.uid === user.uid);
-
-  // Consistently use the URL username if provided, otherwise fallback to context
-  const targetUsername = username || userData?.username || (isInitialOwnProfile ? (user?.displayName || '') : '') || 'student';
-
-  // Uses local state primarily (for instant updates), falls back to user context
-  const displayUsername = profileData?.username || (isOwnProfile ? userData?.username : null) || (username && !userNotFound ? username : (loadingProfile ? 'Loading...' : 'student'));
-  
-  // Extra safety: ensure displayName is always a string before calling charAt
-  let displayName = profileData?.displayName || (isOwnProfile ? (userData?.displayName || user?.displayName) : null) || (username && !userNotFound ? username : (loadingProfile ? 'Loading...' : 'Student'));
-  if (typeof displayName !== 'string') displayName = String(displayName || 'Student');
-
-  const displayEmail = (isOwnProfile || profileData?.publicEmail) ? (profileData?.email || user?.email || 'No Email') : 'Hidden';
-  const displayPhoto = profileData?.photoURL || (isOwnProfile ? user?.photoURL : null);
-  const schoolName = profileData?.schoolName || userData?.schoolName || '';
-
-  // Fetch the target user's profile data
+  // 2. Data Fetching & Safety Timeout
   useEffect(() => {
-    const fetchProfile = async () => {
+    // Wait for Auth to initialize
+    if (user === undefined) return;
+
+    let isMounted = true;
+    const fetchProfileData = async () => {
       setLoadingProfile(true);
       setUserNotFound(false);
+
+      // Safety timeout: If network is dead, show what we have after 10s
+      const timeoutId = setTimeout(() => {
+        if (isMounted && loadingProfile) {
+          console.warn("Profile fetch timed out; falling back to local info.");
+          setLoadingProfile(false);
+          if (isOwnProfile && !profileData) {
+            setProfileData({ uid: user?.uid, displayName: user?.displayName || 'User' });
+          }
+        }
+      }, 10000);
+
       try {
         if (isOwnProfile) {
-          // Fast-path: we are the user — always use auth data directly
-          setProfileData({
-            ...(userData || {}),
-            displayName: user?.displayName || userData?.displayName, // Favor Auth displayName but fallback to Firestore
-            photoURL: user?.photoURL || userData?.photoURL
-          });
-          setLoadingProfile(false);
-          return;
-        }
-
-        // Query Firestore for the user with this username (case-insensitive via lowercase field)
-        try {
-          // 1. First try the new lowercase handle field
-          let q = query(collection(db, 'users'), where('username_lowercase', '==', targetUsername.toLowerCase()));
-          let querySnapshot = await getDocs(q);
-
-          // 2. Fallback to legacy case-sensitive username handle
-          if (querySnapshot.empty) {
-            q = query(collection(db, 'users'), where('username', '==', targetUsername));
-            querySnapshot = await getDocs(q);
-          }
-
-          // 3. Fallback to searching by displayName (full name) — catches users without handles
-          if (querySnapshot.empty) {
-             q = query(collection(db, 'users'), where('displayName', '==', targetUsername));
-             querySnapshot = await getDocs(q);
-          }
-
-          if (!querySnapshot.empty) {
-            const docSnap = querySnapshot.docs[0];
-            const data = docSnap.data();
+          // OWN PROFILE: Use userData if available, otherwise stay loading until it arrives
+          if (userData !== undefined) {
+            const data = userData || {};
             setProfileData({
               ...data,
-              uid: docSnap.id, // Critical for ownership check
-              username: data.username || data.displayName || targetUsername,
-              displayName: data.displayName || data.fullName || targetUsername,
-              photoURL: data.photoURL || null,
-              schoolName: data.schoolName || '',
-              email: data.email || ''
+              uid: user?.uid,
+              displayName: data.displayName || user?.displayName || 'User',
+              photoURL: data.photoURL || user?.photoURL || null
             });
-          } else {
-            // Username not found in Firestore
-            setUserNotFound(true);
+            setLoadingProfile(false);
+            clearTimeout(timeoutId);
           }
-        } catch (queryErr) {
-          console.error('Error querying user by username:', queryErr);
-          setProfileData({ username: targetUsername, displayName: targetUsername, photoURL: null, schoolName: '' });
+          return; // AuthContext handles the 'isOwnProfile' data stream
         }
 
+        // EXTERNAL PROFILE: Query by username
+        if (!username) return;
+        const q = query(collection(db, 'users'), where('username_lowercase', '==', username.toLowerCase()));
+        const querySnapshot = await getDocs(q);
+
+        if (isMounted) {
+          if (!querySnapshot.empty) {
+            const docSnap = querySnapshot.docs[0];
+            setProfileData({ ...docSnap.data(), uid: docSnap.id });
+          } else {
+            setUserNotFound(true);
+          }
+          setLoadingProfile(false);
+          clearTimeout(timeoutId);
+        }
       } catch (err) {
-        console.error("Error fetching profile:", err);
-      } finally {
-        setLoadingProfile(false);
+        console.error("Error fetching external profile:", err);
+        if (isMounted) {
+          setLoadingProfile(false);
+          clearTimeout(timeoutId);
+        }
       }
     };
-    if (user !== undefined) {
-      fetchProfile();
-    }
-  }, [targetUsername, isOwnProfile, user, userData]);
+
+    fetchProfileData();
+    return () => { isMounted = false; };
+  }, [username, user, userData]);
 
   const handleProfileUpdate = (newData) => {
     // If we're on our own profile, update local UI optimistically
@@ -168,7 +170,7 @@ export default function ProfilePage() {
         }}>?</div>
         <h2 style={{ margin: 0, fontSize: '1.5rem' }}>User not found</h2>
         <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-          No account with the username <strong>@{targetUsername}</strong> exists.
+          No account with the username <strong>@{username}</strong> exists.
         </p>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
           Double-check the spelling and try again.

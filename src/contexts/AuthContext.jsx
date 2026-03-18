@@ -14,7 +14,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState(undefined); // undefined = loading, null = missing
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,10 +30,11 @@ export function AuthProvider({ children }) {
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           } else {
-            setUserData(null);
+            setUserData(null); // Explicitly null means fetch finished but no doc
           }
         }, (error) => {
           console.error("Error fetching user data:", error);
+          setUserData(null); // Fallback on error
         });
       } else {
         setUserData(null);
@@ -43,8 +44,6 @@ export function AuthProvider({ children }) {
         }
       }
       
-      // CRITICAL: We set loading to false as soon as the AUTH state is known.
-      // We don't wait for Firestore (which might be blocked by ad-blockers or slow network).
       setLoading(false);
     });
 
@@ -55,6 +54,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   if (loading) return (
+// ... (loading UI remains same)
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       height: '100vh', width: '100vw',
