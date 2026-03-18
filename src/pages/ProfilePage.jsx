@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';
+import { query, collection, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import EditProfileModal from '../components/EditProfileModal';
@@ -40,82 +40,50 @@ export default function ProfilePage() {
   const [userNotFound, setUserNotFound] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- Ownership Logic ---
-  // If no username in URL, it's definitely our profile. 
-  // If there is a username, check if it matches our handle (case-insensitive).
+  // 1. Determine Ownership (Stable derived value)
   const isOwnProfile = !username || 
-                       (userData?.username?.toLowerCase() === username?.toLowerCase()) ||
+                       (userData?.username?.toLowerCase() === username?.toLowerCase()) || 
                        (user?.uid && profileData?.uid === user.uid);
 
-  // --- Identity Resolution (Render Logic) ---
-  // Handle: Firestore Profile > Auth UserData > URL Param > Default
-  const displayUsername = profileData?.username || 
-                          (isOwnProfile ? userData?.username : null) || 
-                          username || 
-                          'user';
-
-  // Name: Firestore Profile > Auth UserData Name > Auth Account Name > Default
-  const displayName = profileData?.displayName || 
-                      (isOwnProfile ? (userData?.displayName || user?.displayName) : null) || 
-                      'User';
-
+  // 2. Identity Resolution
+  const displayUsername = profileData?.username || (isOwnProfile ? userData?.username : null) || username || 'user';
+  const displayName = profileData?.displayName || (isOwnProfile ? (userData?.displayName || user?.displayName) : null) || 'User';
   const displayEmail = (isOwnProfile || profileData?.publicEmail) ? (profileData?.email || user?.email || 'No Email') : 'Hidden';
   const displayPhoto = profileData?.photoURL || (isOwnProfile ? user?.photoURL : null);
   const schoolName = profileData?.schoolName || userData?.schoolName || '';
 
-  // --- Effects ---
-
-  // 1. Toast Cleanup
+  // 3. Effect: Profile Fetching
   useEffect(() => {
-    if (isSaving) {
-      const timer = setTimeout(() => setIsSaving(false), 7000);
-      return () => clearTimeout(timer);
-    }
-  }, [isSaving]);
-
-  // 2. Data Fetching & Safety Timeout
-  useEffect(() => {
-    // Wait for Auth to initialize
+    // Wait for auth to initialize
     if (user === undefined) return;
 
     let isMounted = true;
-    const fetchProfileData = async () => {
+    const fetchProfile = async () => {
       setLoadingProfile(true);
       setUserNotFound(false);
 
-      // Safety timeout: If network is dead, show what we have after 10s
-      const timeoutId = setTimeout(() => {
-        if (isMounted && loadingProfile) {
-          console.warn("Profile fetch timed out; falling back to local info.");
-          setLoadingProfile(false);
-          if (isOwnProfile && !profileData) {
-            setProfileData({ uid: user?.uid, displayName: user?.displayName || 'User' });
-          }
-        }
-      }, 10000);
+      if (!username || (userData?.username?.toLowerCase() === username?.toLowerCase())) {
+        // OWN PROFILE FAST-PATH (Instant display)
+        const d_name = userData?.displayName || user?.displayName || 'Final Verified Name';
+        const d_handle = userData?.username || user?.email?.split('@')[0] || 'user';
+        
+        setProfileData({
+          uid: user?.uid,
+          username: d_handle,
+          displayName: d_name,
+          ...userData
+        });
+        
+        // If we have at least the Auth session, we can show the page immediately
+        setLoadingProfile(false);
+        return;
+      }
 
+      // EXTERNAL PROFILE FETCH
       try {
-        if (isOwnProfile) {
-          // OWN PROFILE: Use userData if available, otherwise stay loading until it arrives
-          if (userData !== undefined) {
-            const data = userData || {};
-            setProfileData({
-              ...data,
-              uid: user?.uid,
-              displayName: data.displayName || user?.displayName || 'User',
-              photoURL: data.photoURL || user?.photoURL || null
-            });
-            setLoadingProfile(false);
-            clearTimeout(timeoutId);
-          }
-          return; // AuthContext handles the 'isOwnProfile' data stream
-        }
-
-        // EXTERNAL PROFILE: Query by username
-        if (!username) return;
         const q = query(collection(db, 'users'), where('username_lowercase', '==', username.toLowerCase()));
         const querySnapshot = await getDocs(q);
-
+        
         if (isMounted) {
           if (!querySnapshot.empty) {
             const docSnap = querySnapshot.docs[0];
@@ -124,20 +92,33 @@ export default function ProfilePage() {
             setUserNotFound(true);
           }
           setLoadingProfile(false);
-          clearTimeout(timeoutId);
         }
       } catch (err) {
-        console.error("Error fetching external profile:", err);
-        if (isMounted) {
-          setLoadingProfile(false);
-          clearTimeout(timeoutId);
-        }
+        console.error("Profile fetch error:", err);
+        if (isMounted) setLoadingProfile(false);
       }
     };
 
-    fetchProfileData();
+    fetchProfile();
     return () => { isMounted = false; };
-  }, [username, user, userData]);
+  }, [username, user?.uid, userData]); // Simplified & Stable deps
+
+  // 4. Effect: Safety Resolve
+  useEffect(() => {
+    if (!loadingProfile) return;
+    const timeout = setTimeout(() => {
+      console.warn("Safety trigger: forced loading resolution.");
+      setLoadingProfile(false);
+    }, 8000);
+    return () => clearTimeout(timeout);
+  }, [loadingProfile]);
+
+  // 5. Toast Cleanup
+  useEffect(() => {
+    if (!isSaving) return;
+    const timer = setTimeout(() => setIsSaving(false), 7000);
+    return () => clearTimeout(timer);
+  }, [isSaving]);
 
   const handleProfileUpdate = (newData) => {
     // If we're on our own profile, update local UI optimistically

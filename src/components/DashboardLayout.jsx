@@ -82,7 +82,7 @@ export default function DashboardLayout() {
 
           <div className="dash-user">
             <div className="dash-user__info">
-              <span className="dash-user__name">{user?.displayName || 'Student'}</span>
+               <p className="dash-user__name">{user?.displayName || (userData?.username ? `@${userData.username}` : 'User')}</p>
               <span className="dash-user__email">{user?.email}</span>
             </div>
             <button onClick={handleSignOut} className="dash-signout">
