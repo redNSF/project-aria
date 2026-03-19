@@ -213,7 +213,7 @@ export default function ProfilePage() {
                 </span>
               )}
             </div>
-            <span className="profile-badge" style={{ marginTop: '10px', display: 'inline-block' }}>PolyVerse Member</span>
+            <span className="profile-badge" style={{ marginTop: '10px', display: 'inline-block' }}>PolyLink Member</span>
           </div>
           <div className="profile-hero__actions">
             {isOwnProfile ? (

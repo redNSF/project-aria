@@ -102,7 +102,7 @@ export function AuthProvider({ children }) {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
-            PolyVerse
+            PolyLink
           </span>
           <div style={{ 
             width: '120px', 
