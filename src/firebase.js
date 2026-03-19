@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   GoogleAuthProvider,
+  GithubAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -43,4 +44,10 @@ const googleProvider = new GoogleAuthProvider();
 
 export function signInWithGoogle() {
   return signInWithPopup(auth, googleProvider);
+}
+
+const githubProvider = new GithubAuthProvider();
+
+export function signInWithGithub() {
+  return signInWithPopup(auth, githubProvider);
 }
