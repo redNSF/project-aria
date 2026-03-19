@@ -3,6 +3,7 @@ import { NavLink, useOutlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { logOut } from '../firebase';
+import UploadModal from './UploadModal';
 import '../pages/Dashboard.css';
 
 export default function DashboardLayout() {
@@ -11,6 +12,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const outlet = useOutlet();
   const [searchQuery, setSearchQuery] = useState('');
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const handleSignOut = async () => {
     await logOut();
@@ -81,9 +83,22 @@ export default function DashboardLayout() {
           </nav>
 
           <div className="dash-user">
+            <div className="dash-user__avatar-wrap">
+              {(userData?.photoURL || user?.photoURL) ? (
+                <img
+                  src={userData?.photoURL || user?.photoURL}
+                  alt={userData?.displayName || user?.displayName || 'User'}
+                  className="dash-user__avatar-img"
+                />
+              ) : (
+                <div className="dash-user__avatar-initials">
+                  {(userData?.displayName || user?.displayName || user?.email || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
             <div className="dash-user__info">
-               <p className="dash-user__name">{user?.displayName || (userData?.username ? `@${userData.username}` : 'User')}</p>
-              <span className="dash-user__email">{user?.email}</span>
+              <p className="dash-user__name">{userData?.displayName || user?.displayName || (userData?.username ? `@${userData.username}` : 'User')}</p>
+              <span className="dash-user__handle">{userData?.username ? `@${userData.username}` : user?.email}</span>
             </div>
             <button onClick={handleSignOut} className="dash-signout">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -115,7 +130,7 @@ export default function DashboardLayout() {
                 style={isMentionMode ? { paddingLeft: '2rem', color: 'var(--accent-primary, #a78bfa)' } : {}}
               />
             </div>
-            <button className="dash-btn-primary">
+            <button className="dash-btn-primary" onClick={() => setUploadOpen(true)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               New Upload
             </button>
@@ -139,6 +154,8 @@ export default function DashboardLayout() {
 
         </main>
       </div>
+
+      <UploadModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
     </div>
   );
 }

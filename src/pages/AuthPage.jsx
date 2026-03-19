@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, db } from '../firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import './AuthPage.css';
 
@@ -127,13 +127,26 @@ function AuthPage() {
     }
 
     // --- Validation: Alphanumeric only ---
-    if (!/^[a-zA-Z0-9]+$/.test(username)) {
-      setError('Username can only contain letters and numbers.');
+    if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, dots and underscores.');
       setIsSubmitting(false);
       return;
     }
 
     setIsSubmitting(true);
+
+    // --- Uniqueness check ---
+    try {
+      const q = query(collection(db, 'users'), where('username_lowercase', '==', username.toLowerCase()));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        setError('That username is already taken. Please choose another.');
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Username check failed, proceeding:', err);
+    }
     try {
       const userCredential = await signUpWithEmail(signupEmail, signupPassword);
       const user = userCredential.user;
@@ -163,7 +176,29 @@ function AuthPage() {
     setError('');
     setIsSubmitting(true);
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      const user = result.user;
+
+      // Create Firestore doc only if it doesn't exist yet
+      const userDocRef = doc(db, 'users', user.uid);
+      const existing = await getDoc(userDocRef);
+      if (!existing.exists()) {
+        // Auto-generate a username from their display name or email
+        const baseUsername = (user.displayName || user.email?.split('@')[0] || 'user')
+          .replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 20);
+        await setDoc(userDocRef, {
+          displayName: user.displayName || '',
+          email: user.email || '',
+          username: baseUsername,
+          username_lowercase: baseUsername,
+          photoURL: user.photoURL || '',
+          bio: '',
+          website: '',
+          schoolName: '',
+          createdAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+
       navigate('/', { replace: true });
     } catch (err) {
       setError(friendlyError(err));
