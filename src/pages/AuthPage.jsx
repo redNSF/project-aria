@@ -266,9 +266,7 @@ function AuthPage() {
             <>
               <div className="auth-brand">
                 <div className="auth-brand__icon auth-brand__icon--login">
-                  <svg viewBox="0 0 24 24">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+                  <img src="/polylink.png" alt="PolyLink" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <h1 className="auth-brand__title">PolyLink</h1>
                 <p className="auth-brand__subtitle">Welcome back — sign in to continue</p>
@@ -390,12 +388,7 @@ function AuthPage() {
             <>
               <div className="auth-brand">
                 <div className="auth-brand__icon auth-brand__icon--signup">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="19" y1="8" x2="19" y2="14" />
-                    <line x1="22" y1="11" x2="16" y2="11" />
-                  </svg>
+                  <img src="/polylink.png" alt="PolyLink" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <h1 className="auth-brand__title">Join PolyLink</h1>
                 <p className="auth-brand__subtitle">Create your account and start connecting</p>

@@ -109,15 +109,12 @@ export function AuthProvider({ children }) {
         }}
       >
         <div style={{ position: 'relative', width: '80px', height: '80px' }}>
-          {/* Main Logo Star */}
-          <svg viewBox="0 0 24 24" style={{
-            width: '100%', height: '100%',
-            fill: '#a78bfa',
+          {/* Main Logo */}
+          <img src="/polylink.png" alt="PolyLink" style={{
+            width: '100%', height: '100%', objectFit: 'contain',
             filter: 'drop-shadow(0 0 15px rgba(167, 139, 250, 0.6))',
             animation: 'floatLogo 2s ease-in-out infinite'
-          }}>
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
+          }} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>

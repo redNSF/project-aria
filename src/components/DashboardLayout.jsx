@@ -46,9 +46,7 @@ export default function DashboardLayout() {
         <aside className="dash-sidebar">
           <div className="dash-brand">
             <div className="dash-brand__icon">
-              <svg viewBox="0 0 24 24">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
+              <img src="/polylink.png" alt="PolyLink" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <h1 className="dash-brand__title">PolyLink</h1>
           </div>

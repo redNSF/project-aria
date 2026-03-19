@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #061024;
+  background-color: #1A202C;
   position: relative;
   overflow: hidden;
   padding: 1.5rem 1rem;
@@ -429,10 +429,39 @@
 }
 
 .auth-remember__checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: #3b82f6;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.auth-remember__checkbox:hover {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(167, 139, 250, 0.1);
+}
+
+.auth-remember__checkbox:checked {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  border-color: #a78bfa;
+}
+
+.auth-remember__checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .auth-remember__text {
@@ -462,12 +491,40 @@
 }
 
 .auth-terms__checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: #06b6d4;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  margin-top: 2px;
+  transition: all 0.2s ease;
+  position: relative;
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.auth-terms__checkbox:hover {
+  border-color: rgba(6, 182, 212, 0.5);
+  background: rgba(6, 182, 212, 0.1);
+}
+
+.auth-terms__checkbox:checked {
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  border-color: #22d3ee;
+}
+
+.auth-terms__checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .auth-terms__text {
