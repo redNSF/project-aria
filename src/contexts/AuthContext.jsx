@@ -23,28 +23,41 @@ export function AuthProvider({ children }) {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
 
+      // Clean up any previous Firestore listener
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
       if (firebaseUser) {
         // Listen to Firestore document updates for the logged-in user
         const userDocRef = doc(db, 'users', firebaseUser.uid);
+        let isFirstSnapshot = true;
+
         unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           } else {
-            setUserData(null); // Explicitly null means fetch finished but no doc
+            setUserData(null);
+          }
+          // Only dismiss loading AFTER we have Firestore data
+          if (isFirstSnapshot) {
+            isFirstSnapshot = false;
+            setLoading(false);
           }
         }, (error) => {
           console.error("Error fetching user data:", error);
-          setUserData(null); // Fallback on error
+          setUserData(null);
+          if (isFirstSnapshot) {
+            isFirstSnapshot = false;
+            setLoading(false);
+          }
         });
       } else {
+        // No user logged in — dismiss loading immediately
         setUserData(null);
-        if (unsubscribeSnapshot) {
-          unsubscribeSnapshot();
-          unsubscribeSnapshot = null;
-        }
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => {

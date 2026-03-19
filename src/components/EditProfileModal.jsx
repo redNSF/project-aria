@@ -84,6 +84,13 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
     setAvatarPreview(URL.createObjectURL(file));
   };
 
+  // Helper: wrap a promise with a timeout so saves never hang forever
+  const withTimeout = (promise, ms = 10000) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. Check your Firebase security rules.')), ms)),
+    ]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -102,32 +109,39 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
 
       // Upload avatar if a new file was picked
       if (avatarFile && user?.uid) {
-        const storageRef = ref(storage, `avatars/${user.uid}/avatar`);
-        const task = uploadBytesResumable(storageRef, avatarFile);
-        await new Promise((resolve, reject) => {
-          task.on('state_changed',
-            (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-            reject,
-            async () => {
-              finalPhotoURL = await getDownloadURL(task.snapshot.ref);
-              resolve();
-            }
-          );
-        });
-        setUploadProgress(0);
+        try {
+          const storageRef = ref(storage, `avatars/${user.uid}/avatar`);
+          const task = uploadBytesResumable(storageRef, avatarFile);
+          await withTimeout(new Promise((resolve, reject) => {
+            task.on('state_changed',
+              (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+              reject,
+              async () => {
+                finalPhotoURL = await getDownloadURL(task.snapshot.ref);
+                resolve();
+              }
+            );
+          }), 15000);
+          setUploadProgress(0);
+        } catch (uploadErr) {
+          console.warn('Avatar upload failed, saving without new photo:', uploadErr);
+          // Keep the existing photo — don't block the rest of the save
+          finalPhotoURL = avatarPreview;
+          setUploadProgress(0);
+        }
       }
 
       // Update Firebase Auth display name & photo
       if (auth.currentUser) {
-        await updateProfile(auth.currentUser, {
+        await withTimeout(updateProfile(auth.currentUser, {
           displayName: displayName.trim(),
           photoURL: finalPhotoURL || '',
-        });
+        }));
       }
 
       // Save to Firestore
       if (user?.uid) {
-        await setDoc(doc(db, 'users', user.uid), {
+        await withTimeout(setDoc(doc(db, 'users', user.uid), {
           displayName: displayName.trim(),
           username: username.trim(),
           username_lowercase: username.trim().toLowerCase(),
@@ -136,7 +150,7 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
           schoolName: schoolName.trim(),
           photoURL: finalPhotoURL || '',
           lastUpdated: new Date().toISOString(),
-        }, { merge: true });
+        }, { merge: true }));
       }
 
       if (onProfileUpdate) {
@@ -152,7 +166,11 @@ export default function EditProfileModal({ isOpen, onClose, user, userData, onPr
       onClose();
     } catch (err) {
       console.error('Profile save failed:', err);
-      setError('Failed to save profile: ' + (err.message || 'Unknown error'));
+      setError(
+        err.message?.includes('timed out')
+          ? 'Save timed out — your Firebase security rules may be blocking writes. Please check Storage & Firestore rules in the Firebase Console.'
+          : 'Failed to save profile: ' + (err.message || 'Unknown error')
+      );
     } finally {
       setLoading(false);
       if (setSaving) setSaving(false);

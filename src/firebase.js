@@ -10,16 +10,15 @@ import {
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Firebase config loaded from environment variables (.env locally, Netlify env vars in production)
 const firebaseConfig = {
-  apiKey: "AIzaSyAt_glvat6aPw_Hxdu1wPvKTwwzSeWkGR8",
-  authDomain: "exa-inc.firebaseapp.com",
-  databaseURL: "https://exa-inc.firebaseio.com",
-  projectId: "exa-inc",
-  storageBucket: "exa-inc.firebasestorage.app",
-  messagingSenderId: "94918537306",
-  appId: "1:94918537306:web:821991be2555d34a166863",
-  measurementId: "G-339R6HGQWE"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
