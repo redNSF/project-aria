@@ -53,6 +53,15 @@ export function AuthProvider({ children }) {
             setLoading(false);
           }
         });
+
+        // Safety timeout: if Firestore hasn't responded in 5 seconds, dismiss loading anyway
+        setTimeout(() => {
+          if (isFirstSnapshot) {
+            console.warn('⚠️ Firestore snapshot timed out. Check your Firebase Security Rules!');
+            isFirstSnapshot = false;
+            setLoading(false);
+          }
+        }, 5000);
       } else {
         // No user logged in — dismiss loading immediately
         setUserData(null);

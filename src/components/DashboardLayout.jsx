@@ -37,10 +37,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="dashboard-page">
-      {/* Background Orbs */}
-      <div className="dash-orb dash-orb--1" />
-      <div className="dash-orb dash-orb--2" />
-      <div className="dash-orb dash-orb--3" />
+
 
       {/* Main Layout */}
       <div className="dash-layout">
