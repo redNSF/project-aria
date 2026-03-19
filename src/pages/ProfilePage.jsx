@@ -52,7 +52,17 @@ export default function ProfilePage() {
   const schoolName      = profileData?.schoolName || (isOwnProfile ? userData?.schoolName : '') || '';
   const bio             = profileData?.bio || (isOwnProfile ? userData?.bio : '') || '';
   const website         = profileData?.website || (isOwnProfile ? userData?.website : '') || '';
+  const createdAt       = profileData?.createdAt || (isOwnProfile ? userData?.createdAt : null);
   const profileUid      = profileData?.uid;
+
+  // Format the join date
+  const joinDate = (() => {
+    if (!createdAt) return null;
+    try {
+      const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } catch { return null; }
+  })();
 
   // ── Profile Fetch ──────────────────────────────────────────
   useEffect(() => {
@@ -210,6 +220,12 @@ export default function ProfilePage() {
                 <span className="profile-meta-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                   {displayEmail}
+                </span>
+              )}
+              {joinDate && (
+                <span className="profile-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Joined {joinDate}
                 </span>
               )}
             </div>

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import { auth, db } from '../firebase';
 
@@ -36,7 +36,14 @@ export function AuthProvider({ children }) {
 
         unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
-            setUserData(docSnap.data());
+            const data = docSnap.data();
+            setUserData(data);
+
+            // Backfill createdAt for existing profiles that don't have it
+            if (!data.createdAt) {
+              setDoc(userDocRef, { createdAt: new Date().toISOString() }, { merge: true })
+                .catch((err) => console.warn('Could not backfill createdAt:', err));
+            }
           } else {
             setUserData(null);
           }
