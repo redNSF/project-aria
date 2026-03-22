@@ -4,6 +4,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { uploadToR2 } from '../services/r2Storage';
 import './UploadModal.css';
 
 const ACCEPTED_TYPES = {
@@ -112,32 +113,55 @@ export default function UploadModal({ isOpen, onClose }) {
     try {
       const uploadedFiles = [];
 
-      await Promise.all(files.map((file) => new Promise((resolve, reject) => {
-        const storageRef = ref(
-          storage,
-          `uploads/${user.uid}/${Date.now()}_${file.name}`
-        );
-        const task = uploadBytesResumable(storageRef, file);
-
-        task.on('state_changed',
-          (snapshot) => {
-            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-            setProgresses(prev => ({ ...prev, [file.name]: pct }));
-          },
-          reject,
-          async () => {
-            const url = await getDownloadURL(task.snapshot.ref);
+      await Promise.all(files.map(async (file) => {
+        if (file.type === 'application/pdf') {
+          // Use Cloudflare R2 for PDFs
+          try {
+            const r2Result = await uploadToR2(file, (pct) => {
+              setProgresses(prev => ({ ...prev, [file.name]: pct }));
+            });
             uploadedFiles.push({
               name: file.name,
-              type: ACCEPTED_TYPES[file.type]?.label || 'FILE',
+              type: 'PDF',
               size: file.size,
-              url,
-              storagePath: task.snapshot.ref.fullPath,
+              url: r2Result.url,
+              storagePath: r2Result.key,
+              provider: 'r2'
             });
-            resolve();
+          } catch (err) {
+            throw new Error(`R2 upload failed for ${file.name}: ${err.message}`);
           }
-        );
-      })));
+        } else {
+          // Use Firebase for images/other types
+          await new Promise((resolve, reject) => {
+            const storageRef = ref(
+              storage,
+              `uploads/${user.uid}/${Date.now()}_${file.name}`
+            );
+            const task = uploadBytesResumable(storageRef, file);
+
+            task.on('state_changed',
+              (snapshot) => {
+                const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                setProgresses(prev => ({ ...prev, [file.name]: pct }));
+              },
+              reject,
+              async () => {
+                const url = await getDownloadURL(task.snapshot.ref);
+                uploadedFiles.push({
+                  name: file.name,
+                  type: ACCEPTED_TYPES[file.type]?.label || 'FILE',
+                  size: file.size,
+                  url,
+                  storagePath: task.snapshot.ref.fullPath,
+                  provider: 'firebase'
+                });
+                resolve();
+              }
+            );
+          });
+        }
+      }));
 
       // Save metadata to Firestore
       await addDoc(collection(db, 'uploads'), {
